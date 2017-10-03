@@ -8,7 +8,7 @@ static void show_help()
 	const char* help = 
 	"**********************************************\n"
 	"* AES - Encrypt a file using AES in CBC mode *\n"
-	"* Version 1.0.8a                             *\n"
+	"* Version 1.0.9                             *\n"
 	"**********************************************\n"
 	"\n"
 	"Usage: aes\n"
