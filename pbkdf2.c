@@ -1,6 +1,5 @@
 #include "pbkdf2.h"
 #include "xyssl/sha2.h"
-#include "xyssl/sha512.h"
 
 #define MBEDTLS_MD_MAX_SIZE 32
 
