@@ -34,4 +34,4 @@ pass.txt
 *.js
 out*.txt
 *.zip
-
+*.out

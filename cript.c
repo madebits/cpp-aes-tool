@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
                     show_help();
                     return 0;
                 case 'v':
-                    ops.verbose = 1;
+                    ops.verbose++;
                     break;
                 case 's':
                     ops.salt_len_equals_keysize = 0;

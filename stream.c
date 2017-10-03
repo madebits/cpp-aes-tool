@@ -65,7 +65,7 @@ static int raw_read(stream_ctx* ctx, FILE* fin, unsigned char buffer[])
         tries++;
         read_count = fread(&buffer[total_read], (size_t)1, BLOCK_LENGTH - total_read, fin);
         total_read += (int)read_count;
-        if(ctx->verbose) fprintf(stderr, "block (%ld): enc %d, read %d (%ld trie %d), feof %d, ferror %d\n", buffer_count, ctx->encodeMode, total_read, read_count, tries, feof(fin), ferror(fin));
+        if(ctx->verbose > 2) fprintf(stderr, "block (%ld): enc %d, read %d (%ld trie %d), feof %d, ferror %d\n", buffer_count, ctx->encodeMode, total_read, read_count, tries, feof(fin), ferror(fin));
         if((int)read_count <= 0) break;
     }
     // dump("IN BUFFER", buffer, total_read, ctx->verbose);

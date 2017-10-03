@@ -112,7 +112,7 @@ output=$(echo -n "${input}" | ./aes -p "${pass}" -k 256 $COMMON | ./aes -d -p "$
 checkfail
 
 setdata K05 "012345678" "t"
-output=$(echo -n "${input}" | ./aes -p "${pass}" -k 1aa  $COMMON 2>/dev/null | ./aes -d -p "${pass}" -k 128 $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" -k 1aa $COMMON 2>/dev/null | ./aes -d -p "${pass}" -k 128 $COMMON)
 checkfail
 
 #pass
@@ -122,41 +122,41 @@ output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON 2>/dev/null | ./aes -d 
 checkfail
 
 setdata P02 "012345678" "0"
-output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | tee last.out | ./aes -d -p "${pass}" $COMMON)
 check
 
 setdata P03 "012345678" "01234567"
-output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | tee last.out | ./aes -d -p "${pass}" $COMMON)
 check
 
 setdata P04 "012345678" "012345678"
-output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | tee last.out  | ./aes -d -p "${pass}" $COMMON)
 check
 
 setdata P05 "012345678" "012345678"
-output=$(echo -n "${input}" | ./aes -p "${pass}" -k 128 $COMMON | ./aes -d -p "${pass}" -k 128 $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" -k 128 $COMMON | tee last.out | ./aes -d -p "${pass}" -k 128 $COMMON)
 check
 
 # misc
 
 setdata M01 "\n0\n" "t"
-output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}"  $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | tee last.out | ./aes -d -p "${pass}"  $COMMON)
 check
 
 setdata M02 "\n0\n" "t"
-output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | tee last.out | ./aes -d -p "${pass}" $COMMON)
 check
 
 setdata M03 "0123456789abcdef" "t"
-output=$(echo -n "${input}" | ./aes -p "${pass}"  $COMMON | ./aes -d -p "${pass}" $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}"  $COMMON | tee last.out | ./aes -d -p "${pass}" $COMMON)
 check
 
 setdata M04 "0123456789abcdef0123456789abcdef" "t"
-output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | tee last.out | ./aes -d -p "${pass}" $COMMON)
 check
 
 setdata M05 "0123456789abcdef0" "t"
-output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON  | tee last.out | ./aes -d -p "${pass}" $COMMON)
 check
 
 echo Done --------------------
