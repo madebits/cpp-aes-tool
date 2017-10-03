@@ -35,7 +35,7 @@ static void show_help()
     "  -e                : encrypt mode (default)\n"
     "  -d                : decrypt mode\n"
     "  -k keySize        : default 256, valid values are 128, 192, 256\n"
-    "  -c iterationCount : default 100000, should be >= 1\n"
+    "  -c iterationCount : default 500000, should be >= 1\n"
     "  -m                : use PBKDF1 (SHA256) for key generation,\n"
     "                      default is PBKDF2 (SHA256) is used\n"
     "  -r fileRandomIn   : a file to read bytes of random data for IV, salt\n"
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
     ops.key_len = 32;
     ops.mode = AES_ENCRYPT;
     ops.salt_len_equals_keysize = 1;
-    ops.iteration_count = 100000L;
+    ops.iteration_count = 500000L;
     ops.verbose = 0;
     ops.deriveKey1 = 0;
     ops.ae = 0;
