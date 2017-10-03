@@ -2,6 +2,7 @@
 #include <time.h> // for srand
 #include <stdlib.h>
 #include <math.h>
+#include <limits.h>
 
 static void show_help()
 {
@@ -40,7 +41,8 @@ static void show_help()
 	"  -d                : decrypt mode\n"
 	"  -k keySize        : default 256, valid values are 128, 192, 256\n"
 	"  -c iterationCount : default 1024, should be >= 1\n"
-	"  -m                : default generation based PBKDF1 (SHA256), if -m then PBKDF2 (SHA256) is used"
+	"  -m                : default key generation in based on PBKDF1 (SHA256),\n"
+	"                      if -m then PBKDF2 (SHA256) is used\n"
 	"  -r fileRandomIn   : a file to read bytes of random data used for\n"
 	"                      IV, salt, and -h option; minimum length should\n"
 	"                      be (48 + startOffset used for -h)\n"
@@ -66,6 +68,7 @@ static void show_help()
 	"- To encrypt: aes -m -i file.txt -o file.bin -p password\n"
 	"- To decrypt: aes -m -d -i file.bin -o file.txt -p password\n";
 	fprintf(stderr, "%s", help);
+	fprintf(stderr, "Maximum -c iteration count is %ld\n\n", LONG_MAX);
 }
 
 static int password_sum(const char password[], int password_length)
