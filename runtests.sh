@@ -9,7 +9,7 @@ if [ "$?" != 0 ]; then
     exit 1
 fi
 
-COMMON="-c 1024 -v"
+COMMON="-c 1024"
 
 test="0"
 output=""
