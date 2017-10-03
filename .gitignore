@@ -31,3 +31,5 @@
 aes
 pass.txt
 .vscode
+*.js
+
