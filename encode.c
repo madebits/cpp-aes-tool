@@ -1,6 +1,6 @@
 #include "encode.h"
 #include "xyssl/aes.h"
-#include "xyssl/sha2.h"
+#include "pbkdf2.h"
 
 /** well, salt, iv only need to be different for each run */
 static void fill_random(unsigned char b[], int b_len, FILE* frnd, int verbose)
@@ -72,49 +72,6 @@ static int read_to_offset(FILE* fin, int start_offset)
 	return 0;
 }
 
-/** PBKDF1 (PKCS #5 v1.5) */
-void derive_key(
-	unsigned char key[],
-	int key_len, /** in bytes */
-	unsigned char password[],
-	int password_len,
-	unsigned char salt[],
-	int salt_len,
-	long iteration_count
-	)
-{
-	sha2_context ctx;
-	unsigned char output[32];
-	unsigned long i = 0L;
-
-	if(key_len > 32) key_len = 32;
-	if(iteration_count < 0) iteration_count = 1024L;
-
-	// first iteration, input = password + salt
-	memset(&ctx, 0, sizeof(sha2_context));
-	sha2_starts(&ctx, 0);
-	sha2_update(&ctx, &password[0], password_len);
-	memset(&password[0], 0, password_len * sizeof(unsigned char));
-
-	if(salt_len > 0)
-	{
-		sha2_update(&ctx, &salt[0], salt_len);
-	}
-	sha2_finish(&ctx, &output[0]);
-
-	// other iterations
-	for(i = 1; i < iteration_count; i++)
-	{
-		memset(&ctx, 0, sizeof(sha2_context));
-		sha2_starts(&ctx, 0);
-		sha2_update(&ctx, &output[0], 32);
-		sha2_finish(&ctx, &output[0]);
-	}
-
-	// done, copy key bytes
-	memcpy(&key[0], &output[0], key_len * sizeof(unsigned char));
-}
-
 // ms-help://MS.VSCC/MS.MSDNVS/security/aboutcrypto_8jjb.htm
 // (PKCS), PKCS #5, section 6.2
 void pad_block(unsigned char b[], int b_len, int block_len)
@@ -136,7 +93,8 @@ int encode(
 	int salt_len_equals_keysize,
 	FILE* frnd,
 	int start_offset,
-	int verbose
+	int verbose,
+	int deriveKeyMode
 	)
 {
 	aes_context ctx;
@@ -175,7 +133,7 @@ int encode(
 	case AES_ENCRYPT:
 		fill_random(&output[0], block_len, frnd, verbose);
 		fill_random(&salt[0], salt_len, frnd, verbose);
-		derive_key(key, key_len, password, password_len, salt, salt_len, iteration_count);
+		derive_key(deriveKeyMode, key, key_len, password, password_len, salt, salt_len, iteration_count);
 		aes_setkey_enc(&ctx, key, key_bits);
 		memset(key, 0, 32 * sizeof(unsigned char));
 		if(write_random_data(fout, start_offset, frnd, verbose) != 0) return 1;
@@ -190,7 +148,7 @@ int encode(
 		if(fread(&output[0], 1, block_len, fin) != block_len) return 1;
 		if(fread(&salt[0], 1, salt_len, fin) != salt_len) return 1;
 		memcpy(&iv[0], &output[0], block_len * sizeof(unsigned char));
-		derive_key(key, key_len, password, password_len, salt, salt_len, iteration_count);
+		derive_key(deriveKeyMode, key, key_len, password, password_len, salt, salt_len, iteration_count);
 		aes_setkey_dec(&ctx, key, key_bits);
 		memset(key, 0, 32 * sizeof(unsigned char));
 		break;

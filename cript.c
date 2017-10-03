@@ -39,6 +39,7 @@ static void show_help()
 	"  -d                : decrypt mode\n"
 	"  -k keySize        : default 256, valid values are 128, 192, 256\n"
 	"  -c iterationCount : default 1024, should be >= 1\n"
+	"  -m                : default PBKDF1, if -m then PBKDF2 is used"
 	"  -r fileRandomIn   : a file to read bytes of random data used for\n"
 	"                      IV, salt, and -h option; minimum length should\n"
 	"                      be (48 + startOffset used for -h)\n"
@@ -115,6 +116,7 @@ int main(int argc, char *argv[])
 	int passBufferLength = 1024;
 	int passBufferRead = 0;
 	int pi = 0;
+	int deriveKeyMode=0;
 	
 	for(; i < argc; i++)
 	{
@@ -254,6 +256,9 @@ int main(int argc, char *argv[])
 				case 'd':
 					mode = AES_DECRYPT;
 					break;
+				case 'm':
+					deriveKeyMode = 1;
+					break;
 				case 'k':
 				    i++;
 					if(i >= argc)
@@ -329,7 +334,7 @@ int main(int argc, char *argv[])
 		start_offset);
 
 	srand((unsigned)time(NULL));
-	error = encode(fin, fout, mode, key_size, (unsigned char*)pass, pass_length, icount, salt_len_equals_keysize, frnd, start_offset, verbose);
+	error = encode(fin, fout, mode, key_size, (unsigned char*)pass, pass_length, icount, salt_len_equals_keysize, frnd, start_offset, verbose, deriveKeyMode);
 	memset(pass, 0, pass_length * sizeof(char));
 	
 	if(verbose) fprintf(stderr, "%s (%d)\n", !error ? "| Done!" : "| Failed!", error);

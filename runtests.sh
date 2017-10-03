@@ -1,6 +1,6 @@
 #/bin/bash
 
-gcc -std=c99 -o aes cript.c encode.c sha2.c aes.c
+gcc -std=c99 -o aes cript.c encode.c sha2.c aes.c pbkdf2.c
 
 test="0"
 output=""
@@ -11,7 +11,7 @@ function check()
 {
 	temp=$(echo -e "${input}")
 	if [[ "${output}" != "${temp}" ]] ; then
-		echo "Failed: ${test}"
+		echo "Failed: ${test} with ${output}"
 		exit 1
 	else 
 		echo "OK: ${test}"
@@ -47,6 +47,10 @@ checkfail
 
 setdata R03 "test" "t"
 output=$(echo "VY2IaH0XBdGToe/WRc3Yijz9Xafei/eDD1a0G36729RIYzzGekGXDuKG5ChTvLKQsB6onXYW1l/SH4VyKFr8bQ==" | base64 -d | ./aes -d -p "${pass}" -k 256)
+check
+
+setdata R04 "test" "t"
+output=$(echo "8hAJbxs4kmhLbVkZg2z7Ixe1CPmJmFTKbcsFwB6lkhC1nH/R1BE5H3+SOAL/NCYWOxQ25HSZLg0lbiJKCYQ3QQ==" | base64 -d | ./aes -d -p "${pass}" -k 256 -m)
 check
 
 # defaults
