@@ -86,7 +86,7 @@ int stream_read(stream_ctx* ctx, FILE* fin)
             read_count = raw_read(ctx, fin, &buffer[i * BLOCK_LENGTH]);
             if(read_count != BLOCK_LENGTH)
             {
-                if(read_count > 0) 
+                if(read_count > 0)
                 {
                     if(ctx->encodeMode)
                     {
@@ -102,7 +102,7 @@ int stream_read(stream_ctx* ctx, FILE* fin)
                 if(i == (ctx->bufferSize -1))
                 {
                     ctx->last = 0;
-                } 
+                }
                 else
                 {
                     dumpctx(ctx);
@@ -119,13 +119,13 @@ int stream_read(stream_ctx* ctx, FILE* fin)
             dumpctx(ctx);
             return -1;
         }
-        
+
         read_count = raw_read(ctx, fin, output);
         if(read_count != BLOCK_LENGTH)
         {
-            if(read_count > 0) 
+            if(read_count > 0)
             {
-                if(ctx->encodeMode) 
+                if(ctx->encodeMode)
                 {
                     pad_block(output, (int)read_count, BLOCK_LENGTH);
                 }
@@ -136,8 +136,8 @@ int stream_read(stream_ctx* ctx, FILE* fin)
                 }
             }
         }
-        
-        if(read_count == 0) 
+
+        if(read_count == 0)
         {
             ctx->last = add(ctx, ctx->rp, -(ctx->padSize + 1));
         }

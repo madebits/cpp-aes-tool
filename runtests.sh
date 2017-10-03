@@ -16,29 +16,29 @@ output=""
 input=""
 pass=""
 
-function check() 
+function check()
 {
     echo "I: [${input}] O: [${output}]"
     if [ "${input}" != "${output}" ] ; then
         echo "Failed: [${test}] with [${temp}]"
         exit 1
-    else 
+    else
         echo "OK: ${test}"
     fi
 }
 
-function checkfail() 
+function checkfail()
 {
     echo "I: [${input}] O: [${output}]"
     if [ "${input}" = "${output}" ] ; then
         echo "Failed: [${test}] with [${output}]"
         exit 1
-    else 
+    else
         echo "OK: ${test}"
     fi
 }
 
-function setdata() 
+function setdata()
 {
     echo "preparing $1 ..."
     test="$1"

@@ -7,7 +7,7 @@
 const char* version = "1.1.0";
 static void show_help()
 {
-    const char* help = 
+    const char* help =
     "Usage: aes\n"
     "  [-i fileIn]\n"
     "  [-o fileOut]\n"
@@ -18,10 +18,10 @@ static void show_help()
     "  [-m]\n"
     "  [-r fileRandomIn]\n"
     "  [-a] [-s] [-v] [-?]\n"
-    "\n"        
+    "\n"
     "Where:\n"
     "  -i fileIn         : input file path\n"
-    "                      fileIn (data) is not changed\n" 
+    "                      fileIn (data) is not changed\n"
     "                      if -i is not specified, or -i - then stdin\n"
     "                      is used\n"
     "  -o fileOut        : output file path\n"
@@ -39,7 +39,7 @@ static void show_help()
     "  -m                : use PBKDF1 (SHA256) for key generation,\n"
     "                      default is PBKDF2 (SHA256)\n"
     "  -r fileRandomIn   : a file to read bytes of random data for IV, salt\n"
-    "                      if not set or shorter than needed\n" 
+    "                      if not set or shorter than needed\n"
     "                      that the rest is filled with C rand() data\n"
     "                      on Linux use /dev/urandom as fileRandomIn (default)\n"
     "  -a                : do not use authenticated encryption (ae)\n"
@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
     int passBufferLength = 1024;
     int passBufferRead = 0;
     int pi = 0;
-    
+
     ops.key_len = 32;
     ops.mode = AES_ENCRYPT;
     ops.salt_len_equals_keysize = 1;
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
     ops.verbose = 0;
     ops.deriveKey1 = 0;
     ops.ae = 1;
-    
+
     for(i = 1; i < argc; i++)
     {
         if(((argv[i][0] == '-') || (argv[i][0] == '/')) && (argv[i][2] == 0) )
@@ -104,18 +104,18 @@ int main(int argc, char *argv[])
                     ops.salt_len_equals_keysize = 0;
                     break;
                 case 'i':
-                    if(!fin) 
-                    {   
+                    if(!fin)
+                    {
                         i++;
                         if(i >= argc)
                         {
-                            fprintf(stderr, "Error: -i input file not specified\n"); 
+                            fprintf(stderr, "Error: -i input file not specified\n");
                             return 1;
                         }
                         fin = (strcmp(argv[i], "-") == 0) ? stdin : fopen(argv[i], "rb");
                         if(fin == 0)
                         {
-                            fprintf(stderr, "Error: -i input file not specified or cannot be read\n"); 
+                            fprintf(stderr, "Error: -i input file not specified or cannot be read\n");
                             return 1;
                         }
                     }
@@ -125,18 +125,18 @@ int main(int argc, char *argv[])
                     }
                     break;
                 case 'o':
-                    if(!fout) 
+                    if(!fout)
                     {
                         i++;
                         if(i >= argc)
                         {
-                            fprintf(stderr, "Error: -o output file not specified\n"); 
+                            fprintf(stderr, "Error: -o output file not specified\n");
                             return 1;
                         }
                         fout = (strcmp(argv[i], "-") == 0) ? stdout : fopen(argv[i], "wb");
                         if(fout == 0)
                         {
-                            fprintf(stderr, "Error: -o output file not specified or cannot be read\n"); 
+                            fprintf(stderr, "Error: -o output file not specified or cannot be read\n");
                             return 1;
                         }
                     }
@@ -146,18 +146,18 @@ int main(int argc, char *argv[])
                     }
                     break;
                 case 'r':
-                    if(!frnd) 
-                    {   
+                    if(!frnd)
+                    {
                         i++;
                         if(i >= argc)
                         {
-                            fprintf(stderr, "Error: -r random data file not specified\n"); 
+                            fprintf(stderr, "Error: -r random data file not specified\n");
                             return 1;
                         }
                         frnd = fopen(argv[i], "rb");
                         if(frnd == 0)
                         {
-                            fprintf(stderr, "Error: -r random data file not specified or cannot be read\n"); 
+                            fprintf(stderr, "Error: -r random data file not specified or cannot be read\n");
                             return 1;
                         }
                     }
@@ -167,12 +167,12 @@ int main(int argc, char *argv[])
                     }
                     break;
                 case 'p':
-                    if(!pass) 
+                    if(!pass)
                     {
                         i++;
                         if(i >= argc)
                         {
-                            fprintf(stderr, "Error: -p password not specified\n"); 
+                            fprintf(stderr, "Error: -p password not specified\n");
                             return 1;
                         }
                         pass = argv[i];
@@ -184,18 +184,18 @@ int main(int argc, char *argv[])
                     }
                     break;
                 case 'f':
-                    if(!fpass) 
-                    {   
+                    if(!fpass)
+                    {
                         i++;
                         if(i >= argc)
                         {
-                            fprintf(stderr, "Error: -f password file not specified\n"); 
+                            fprintf(stderr, "Error: -f password file not specified\n");
                             return 1;
                         }
                         fpass = (strcmp(argv[i], "-") == 0) ? stdin : fopen(argv[i], "rb");
                         if(fpass == 0)
                         {
-                            fprintf(stderr, "Error: -f password file not specified or cannot be read\n"); 
+                            fprintf(stderr, "Error: -f password file not specified or cannot be read\n");
                             return 1;
                         }
                         passBufferRead = fread(passBuffer, 1, passBufferLength * sizeof(char), fpass);
@@ -236,7 +236,7 @@ int main(int argc, char *argv[])
                     i++;
                     if(i >= argc)
                     {
-                        fprintf(stderr, "Error: -k size not specified\n"); 
+                        fprintf(stderr, "Error: -k size not specified\n");
                         return 1;
                     }
                     ops.key_len = read_int(argv[i]) / 8;
@@ -250,7 +250,7 @@ int main(int argc, char *argv[])
                     i++;
                     if(i >= argc)
                     {
-                        fprintf(stderr, "Error: -c count not specified\n"); 
+                        fprintf(stderr, "Error: -c count not specified\n");
                         return 1;
                     }
                     ops.iteration_count = read_long(argv[i]);
@@ -266,20 +266,20 @@ int main(int argc, char *argv[])
             return 1;
         }
     }
-    
+
     if(!fin) fin = stdin;
     if(!fout) fout = stdout;
     if(!pass || (pass_length <= 0))
     {
         fprintf(stderr, "Error: -p password is required\n");
-        return 1; 
+        return 1;
     }
     if(ops.iteration_count < 1L) ops.iteration_count = 1L;
-    
+
     if(ops.verbose) fprintf(stderr,
-        "\nAES START %s (CBC,SHA226): %s, keySize: %d bytes (%d bit), ae=%d, pass: [%s], PBKDF%d, iterationCount %ld ...\n", 
+        "\nAES START %s (CBC,SHA226): %s, keySize: %d bytes (%d bit), ae=%d, pass: [%s], PBKDF%d, iterationCount %ld ...\n",
         version,
-        ops.mode == AES_ENCRYPT ? "ENCRYPT" : "DECRYPT", 
+        ops.mode == AES_ENCRYPT ? "ENCRYPT" : "DECRYPT",
         ops.key_len,
         ops.key_len * 8,
         ops.ae,
@@ -300,13 +300,13 @@ int main(int argc, char *argv[])
     error = encode(fin, fout, (unsigned char*)pass, pass_length, frnd, &ops);
     memset(pass, 0, pass_length * sizeof(char));
     if(fout && (fflush(fout) == EOF))
-    { 
+    {
         error = 1;
     }
-    
+
     if(ops.verbose) fprintf(stderr, "%s (%d) (%s)\n", !error ? "| Done!" : "| Failed!", error, ops.mode == AES_ENCRYPT ? "encrypt" : "decrypt");
     memset(&ops, 0, sizeof(encode_ops));
-    
+
     if(fin && (fin != stdin)) fclose(fin);
     if(fout && (fout != stdout)) fclose(fout);
     if(frnd && (frnd != stdin)) fclose(frnd);
