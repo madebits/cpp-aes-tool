@@ -78,7 +78,7 @@ static void derive_key_1(
     sha2_context ctx;
     unsigned char output[32];
     long i = 0L;
-    
+
     if(key_len > 32) key_len = 32;
     if(iteration_count < 0) iteration_count = 1024L;
 
@@ -123,7 +123,7 @@ void derive_key(
     if(use1)
     {
         derive_key_1(&key[0], key_len, &password[0], password_len, &salt[0], salt_len, iteration_count);
-    } 
+    }
     else
     {
         pbkdf2_hmac(&password[0], password_len, &salt[0], salt_len, iteration_count, key_len, &key[0]);
