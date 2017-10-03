@@ -168,6 +168,7 @@ int encode(
 
     if(ops->cbc_ext)
     {
+        /* use iv_copy array as buffer for G-CBC from here on */
         memcpy(iv_copy, ae_block, BSIZE_BLOCK_LENGTH);
         dump("ext accum (encrypt)", iv_copy, BLOCK_LEN, ops->verbose);
     }
