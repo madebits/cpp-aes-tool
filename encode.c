@@ -33,16 +33,6 @@ static void fill_random(unsigned char b[], int b_len, FILE* frnd, int verbose)
     }
 }
 
-/* c = a ^ b; b = c ^ a, a = c ^ b; */
-static void xor(unsigned char c[], unsigned char a[], unsigned char b[])
-{
-    int i;
-    for(i = 0; i < BLOCK_LEN; i++)
-    {
-        c[i] = a[i] ^ b[i];
-    }
-}
-
 /** return 0 on success, CBC mode */
 int encode(
     FILE* fin,
@@ -166,12 +156,6 @@ int encode(
         return 1;
     }
 
-    if(ops->cbc_ext)
-    {
-        /* use iv_copy array as buffer for G-CBC from here on */
-        memcpy(iv_copy, ae_block, BSIZE_BLOCK_LENGTH);
-        dump("ext accum (encrypt)", iv_copy, BLOCK_LEN, ops->verbose);
-    }
     stream_init(&stream, ops->mode == AES_ENCRYPT ? 1 : 0, ops->ae ? 2 : 0, ops->verbose);
 
     while(1)
@@ -200,15 +184,6 @@ int encode(
         if(ops->mode == AES_ENCRYPT)
         {
             memcpy(iv, output, BSIZE_BLOCK_LENGTH);
-            if(ops->cbc_ext)
-            {
-                if(ops->verbose > 2) dump("E: A", iv_copy, BLOCK_LEN, ops->verbose);
-                if(ops->verbose > 2) dump("E: B", input, BLOCK_LEN, ops->verbose);
-                xor(iv_copy, iv_copy, input);
-
-                temp_input = iv_copy;
-                if(ops->verbose > 2) dump("E: C", temp_input, BLOCK_LEN, ops->verbose);
-            }
         }
 
         aes_crypt_cbc(&ctx, ops->mode, BLOCK_LEN, iv, temp_input, output);
@@ -218,15 +193,6 @@ int encode(
         if(ops->mode == AES_DECRYPT)
         {
             memcpy(iv, temp_input, BSIZE_BLOCK_LENGTH);
-            if(ops->cbc_ext)
-            {
-                if(ops->verbose > 2) dump("D: C", output, BLOCK_LEN, ops->verbose);
-                if(ops->verbose > 2) dump("D: A", iv_copy, BLOCK_LEN, ops->verbose);
-                xor(output, output, iv_copy);
-                if(ops->verbose > 2) dump("D: B", output, BLOCK_LEN, ops->verbose);
-                xor(iv_copy, iv_copy, output);
-                if(ops->verbose > 1) dump("ext out (decrypt)", output, BLOCK_LEN, ops->verbose);
-            }
         }
 
         /* ae: update with output */
