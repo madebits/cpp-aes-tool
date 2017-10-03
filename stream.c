@@ -160,7 +160,8 @@ int stream_read_pad(stream_ctx* ctx, unsigned char output[])
     for(i = 1; i <= ctx->padSize; i++)
     {
         rp = add(ctx, ctx->rp, i);
-        memcpy(&output[(rp - 1) * BLOCK_LENGTH], &(ctx->buffer[rp * BLOCK_LENGTH]), BLOCK_LENGTH * sizeof(unsigned char));
+        // fprintf(stderr, "RP: %d\n", rp);
+        memcpy(&output[(i - 1) * BLOCK_LENGTH], &(ctx->buffer[rp * BLOCK_LENGTH]), BLOCK_LENGTH * sizeof(unsigned char));
     }
     return 0;
 }

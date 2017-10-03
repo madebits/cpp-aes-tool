@@ -33,4 +33,5 @@ pass.txt
 .vscode
 *.js
 out*.txt
+*.zip
 
