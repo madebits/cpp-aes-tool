@@ -195,13 +195,31 @@ int encode(
     {
         sha2_hmac_finish( &h_ctx, ae_block);
         dump("ae: data (encrypt)", ae_block, AE_BLOCK_LEN, ops->verbose);
-        if(fwrite(&ae_block[0], 1, AE_BLOCK_LEN, fout) != AE_BLOCK_LEN) return 1;
+        
+        memcpy(&iv[0], &output[0], BLOCK_LEN * sizeof(unsigned char));
+        aes_crypt_cbc(&ctx, ops->mode, BLOCK_LEN, &iv[0], &ae_block[0], &output[0]);
+        if(fwrite(&output[0], 1, BLOCK_LEN, fout) != BLOCK_LEN) return 1;
+        
+        memcpy(&iv[0], &output[0], BLOCK_LEN * sizeof(unsigned char));
+        aes_crypt_cbc(&ctx, ops->mode, BLOCK_LEN, &iv[0], &ae_block[0 + BLOCK_LEN], &output[0]);
+        if(fwrite(&output[0], 1, BLOCK_LEN, fout) != BLOCK_LEN) return 1;
+                
+        // if(fwrite(&ae_block[0], 1, AE_BLOCK_LEN, fout) != AE_BLOCK_LEN) return 1;
     }
     if((ops->mode == AES_DECRYPT) && ops->ae)
     {
         sha2_hmac_finish( &h_ctx, ae_block);
         dump("ae: data (decrypt)", ae_block, AE_BLOCK_LEN, ops->verbose);
         stream_read_pad(&stream, ae_block_pad);
+        
+        aes_crypt_cbc(&ctx, ops->mode, BLOCK_LEN, &iv[0], &ae_block_pad[0], &output[0]);
+        memcpy(&iv[0], &ae_block_pad[0], BLOCK_LEN * sizeof(unsigned char));
+        memcpy(&ae_block_pad[0], &output[0], BLOCK_LEN * sizeof(unsigned char));
+
+        aes_crypt_cbc(&ctx, ops->mode, BLOCK_LEN, &iv[0], &ae_block_pad[0 + BLOCK_LEN], &output[0]);
+        // memcpy(&iv[0], &ae_block_pad[0 + BLOCK_LEN], BLOCK_LEN * sizeof(unsigned char));
+        memcpy(&ae_block_pad[0 + BLOCK_LEN], &output[0], BLOCK_LEN * sizeof(unsigned char));
+        
         dump("ae: pad  (decrypt)", ae_block_pad, AE_BLOCK_LEN, ops->verbose);
         for(i = 0; i < AE_BLOCK_LEN; i++)
         {

@@ -9,7 +9,7 @@ if [ "$?" != 0 ]; then
     exit 1
 fi
 
-COMMON="-c 1024 -v"
+COMMON="-c 1024"
 
 test="0"
 output=""
@@ -50,19 +50,23 @@ function setdata()
 
 # regression
 setdata R01 "test" "t"
-output=$(echo "5RaVj03ZmIoq4Ja8xPbul2CbpA2VtjYl6ROOZ2xcc1ETMx24nx0mnIE4SV3hqvbu" | base64 -d | ./aes -m -d -p "${pass}" -k 256 -s $COMMON)
+output=$(echo "5RaVj03ZmIoq4Ja8xPbul2CbpA2VtjYl6ROOZ2xcc1ETMx24nx0mnIE4SV3hqvbu" | base64 -d | ./aes -a -m -d -p "${pass}" -k 256 -s $COMMON)
 check
 
 setdata R02 "test" "t"
-output=$(echo "5RaVj03ZmIoq4Ja8xPbul2CbpA2VtjYl6ROOZ2xcc1ETMx24nx0mnIE4SV3hqvbu" | base64 -d | ./aes -m -d -p "${pass}" -k 256 $COMMON)
+output=$(echo "5RaVj03ZmIoq4Ja8xPbul2CbpA2VtjYl6ROOZ2xcc1ETMx24nx0mnIE4SV3hqvbu" | base64 -d | ./aes -a -m -d -p "${pass}" -k 256 $COMMON)
 checkfail
 
 setdata R03 "test" "t"
-output=$(echo "VY2IaH0XBdGToe/WRc3Yijz9Xafei/eDD1a0G36729RIYzzGekGXDuKG5ChTvLKQsB6onXYW1l/SH4VyKFr8bQ==" | base64 -d | ./aes -m -d -p "${pass}" -k 256 $COMMON)
+output=$(echo "VY2IaH0XBdGToe/WRc3Yijz9Xafei/eDD1a0G36729RIYzzGekGXDuKG5ChTvLKQsB6onXYW1l/SH4VyKFr8bQ==" | base64 -d | ./aes -a -m -d -p "${pass}" -k 256 $COMMON)
 check
 
 setdata R04 "test" "t"
-output=$(echo "8hAJbxs4kmhLbVkZg2z7Ixe1CPmJmFTKbcsFwB6lkhC1nH/R1BE5H3+SOAL/NCYWOxQ25HSZLg0lbiJKCYQ3QQ==" | base64 -d | ./aes -d -p "${pass}" -k 256 $COMMON)
+output=$(echo "8hAJbxs4kmhLbVkZg2z7Ixe1CPmJmFTKbcsFwB6lkhC1nH/R1BE5H3+SOAL/NCYWOxQ25HSZLg0lbiJKCYQ3QQ==" | base64 -d | ./aes -a -d -p "${pass}" -k 256 $COMMON)
+check
+
+setdata R05 "test" "t"
+output=$(echo -n "pjKZ/WR40kQCCNca0dZrV0R9CEY4IgsOgjakuQ6gOn6zJ6MQiCNrHPmx5N1mzYyCNgyS5xtmNftbs861sOJm+m5+cOEPa8XisB8gBTSSW/dIIWGRnDBFAmQPhu7dhI+2VR9K/NdpU55NNz/35TAIz1ZjLtS7nv8Dh4oy9z6kCro=" | base64 -d | ./aes -d -p "${pass}" -k 256 $COMMON)
 check
 
 # defaults

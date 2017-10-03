@@ -37,12 +37,13 @@ static void show_help()
     "  -k keySize        : default 256, valid values are 128, 192, 256\n"
     "  -c iterationCount : default 500000, should be >= 1\n"
     "  -m                : use PBKDF1 (SHA256) for key generation,\n"
-    "                      default is PBKDF2 (SHA256) is used\n"
+    "                      default is PBKDF2 (SHA256)\n"
     "  -r fileRandomIn   : a file to read bytes of random data for IV, salt\n"
     "                      if not set or shorter than needed\n" 
     "                      that the rest is filled with C rand() data\n"
     "                      on Linux use /dev/urandom as fileRandomIn (default)\n"
-    "  -a                : use authenticated encryption (ae)\n"
+    "  -a                : no dot use authenticated encryption (ae)\n"
+    "                      default is authenticated encryption\n"
     "  -s                : if specified salt is 16 bytes, if not specified\n"
     "                      then salt as long as -k keySize (default)\n"
     "  -v                : verbose (stderr)\n"
@@ -85,7 +86,7 @@ int main(int argc, char *argv[])
     ops.iteration_count = 500000L;
     ops.verbose = 0;
     ops.deriveKey1 = 0;
-    ops.ae = 0;
+    ops.ae = 1;
 
     
     for(i = 1; i < argc; i++)
@@ -230,7 +231,7 @@ int main(int argc, char *argv[])
                     ops.deriveKey1 = 1;
                     break;
                 case 'a':
-                    ops.ae = 1;
+                    ops.ae = 0;
                     break;
                 case 'k':
                     i++;
