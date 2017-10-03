@@ -21,6 +21,7 @@ typedef struct
     int verbose;
     int deriveKey1;
     int ae; /* 0 or 1 */
+    int cbc_ext;
 } encode_ops;
 
 /** return 0 on success, CBC mode */

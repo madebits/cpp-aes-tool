@@ -33,6 +33,16 @@ static void fill_random(unsigned char b[], int b_len, FILE* frnd, int verbose)
     }
 }
 
+/* c = a ^ b; b = c ^ a, a = c ^ b; */
+static void xor(unsigned char c[], unsigned char a[], unsigned char b[])
+{
+    int i;
+    for(i = 0; i < BLOCK_LEN; i++)
+    {
+        c[i] = a[i] ^ b[i];
+    }
+}
+
 /** return 0 on success, CBC mode */
 int encode(
     FILE* fin,
@@ -50,6 +60,7 @@ int encode(
     unsigned char salt[KEY_LEN_MAX];
     int salt_len = 16;
     unsigned char iv[BLOCK_LEN];
+    unsigned char iv_copy[BLOCK_LEN];
     unsigned char input[BLOCK_LEN];
     unsigned char output[BLOCK_LEN]; /** used initially as iv */
     int read_res = 0;
@@ -57,6 +68,7 @@ int encode(
     int i = 0;
     stream_ctx stream;
     int len = 0;
+    unsigned char* temp_input;
 
     unsigned char ae_salt[AE_BLOCK_LEN];
     unsigned char ae_block[AE_BLOCK_LEN];
@@ -86,6 +98,7 @@ int encode(
     {
     case AES_ENCRYPT:
         fill_random(output, BLOCK_LEN, frnd, ops->verbose);
+        memcpy(iv_copy, output, BSIZE_BLOCK_LENGTH);
         dump("iv   (encrypt)", output, BLOCK_LEN, ops->verbose);
         fill_random(salt, salt_len, frnd, ops->verbose);
         dump("salt (encrypt)", salt, salt_len, ops->verbose);
@@ -99,6 +112,7 @@ int encode(
             derive_key(0, ae_block, AE_BLOCK_LEN, password, password_len, ae_salt, AE_BLOCK_LEN, ops->iteration_count);
             sha2_hmac_starts(&h_ctx, ae_block, AE_BLOCK_LEN, 0);
             sha2_hmac_update(&h_ctx, ae_salt, AE_BLOCK_LEN);
+            sha2_hmac_update(&h_ctx, iv_copy, BLOCK_LEN); /* iv */
         }
 
         /* write header - looks random */
@@ -123,6 +137,7 @@ int encode(
         dump("iv   (decrypt)", output, BLOCK_LEN, ops->verbose);
         dump("salt (decrypt)", salt, salt_len, ops->verbose);
         memcpy(iv, output, BSIZE_BLOCK_LENGTH);
+        memcpy(iv_copy, output, BSIZE_BLOCK_LENGTH);
         derive_key(ops->deriveKey1, key, ops->key_len, password, password_len, salt, salt_len, ops->iteration_count);
         aes_setkey_dec(&ctx, key, key_bits);
         memset(key, 0, BSIZE(KEY_LEN_MAX));
@@ -143,6 +158,7 @@ int encode(
             derive_key(0, ae_block, AE_BLOCK_LEN, password, password_len, ae_salt, AE_BLOCK_LEN, ops->iteration_count);
             sha2_hmac_starts(&h_ctx, ae_block, AE_BLOCK_LEN, 0);
             sha2_hmac_update(&h_ctx, ae_salt, AE_BLOCK_LEN);
+            sha2_hmac_update(&h_ctx, iv_copy, BLOCK_LEN); /* iv */
         }
 
         break;
@@ -150,6 +166,11 @@ int encode(
         return 1;
     }
 
+    if(ops->cbc_ext)
+    {
+        memcpy(iv_copy, ae_block, BSIZE_BLOCK_LENGTH);
+        dump("ext accum (encrypt)", iv_copy, BLOCK_LEN, ops->verbose);
+    }
     stream_init(&stream, ops->mode == AES_ENCRYPT ? 1 : 0, ops->ae ? 2 : 0, ops->verbose);
 
     while(1)
@@ -174,17 +195,38 @@ int encode(
         if(ops->verbose > 1) dump(ops->mode == AES_ENCRYPT ? "in  (encrypt)" : "in  (decrypt)", input, BLOCK_LEN, ops->verbose);
 
         /* convert block */
+        temp_input = input;
         if(ops->mode == AES_ENCRYPT)
         {
             memcpy(iv, output, BSIZE_BLOCK_LENGTH);
-        }
-        aes_crypt_cbc(&ctx, ops->mode, BLOCK_LEN, iv, input, output);
-        if(ops->mode == AES_DECRYPT)
-        {
-            memcpy(iv, input, BSIZE_BLOCK_LENGTH);
+            if(ops->cbc_ext)
+            {
+                if(ops->verbose > 2) dump("E: A", iv_copy, BLOCK_LEN, ops->verbose);
+                if(ops->verbose > 2) dump("E: B", input, BLOCK_LEN, ops->verbose);
+                xor(iv_copy, iv_copy, input);
+
+                temp_input = iv_copy;
+                if(ops->verbose > 2) dump("E: C", temp_input, BLOCK_LEN, ops->verbose);
+            }
         }
 
+        aes_crypt_cbc(&ctx, ops->mode, BLOCK_LEN, iv, temp_input, output);
+
         if(ops->verbose > 1) dump(ops->mode == AES_ENCRYPT ? "out (encrypt)" : "out (decrypt)", output, BLOCK_LEN, ops->verbose);
+
+        if(ops->mode == AES_DECRYPT)
+        {
+            memcpy(iv, temp_input, BSIZE_BLOCK_LENGTH);
+            if(ops->cbc_ext)
+            {
+                if(ops->verbose > 2) dump("D: C", output, BLOCK_LEN, ops->verbose);
+                if(ops->verbose > 2) dump("D: A", iv_copy, BLOCK_LEN, ops->verbose);
+                xor(output, output, iv_copy);
+                if(ops->verbose > 2) dump("D: B", output, BLOCK_LEN, ops->verbose);
+                xor(iv_copy, iv_copy, output);
+                if(ops->verbose > 1) dump("ext out (decrypt)", output, BLOCK_LEN, ops->verbose);
+            }
+        }
 
         /* ae: update with output */
         if((ops->mode == AES_DECRYPT) && ops->ae)

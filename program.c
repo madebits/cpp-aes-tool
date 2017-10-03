@@ -4,7 +4,7 @@
 #include <limits.h>
 #include "encode.h"
 
-const char* version = "1.1.0";
+const char* version = "1.1.1";
 static void show_help()
 {
     const char* help =
@@ -15,9 +15,8 @@ static void show_help()
     "  [-e | -d]\n"
     "  [-k keySize]\n"
     "  [-c iterationCount]\n"
-    "  [-m]\n"
     "  [-r fileRandomIn]\n"
-    "  [-a] [-s] [-v] [-?]\n"
+    "  [-a] [-x] [-m] [-s] [-v] [-?]\n"
     "\n"
     "Where:\n"
     "  -i fileIn         : input file path\n"
@@ -44,7 +43,9 @@ static void show_help()
     "  -k keySize        : default 256, valid values are 128, 192, 256\n"
     "  -a                : do not use authenticated encryption (ae)\n"
     "                      default is to use authenticated encryption\n"
-    "  -m                : use PBKDF1 (SHA256) for key generation,\n"
+    "                      implies also -x\n"
+    "  -x                  turn on G-CBC mode, default is CBC\n"
+    "  -m                : use PBKDF1 (SHA256) for key generation\n"
     "                      default is PBKDF2 (SHA256)\n"
     "                      ignored if -a is not set\n"
     "  -s                : if specified salt is 16 bytes, if not specified\n"
@@ -91,6 +92,7 @@ int main(int argc, char *argv[])
     ops.verbose = 0;
     ops.deriveKey1 = 0;
     ops.ae = 1;
+    ops.cbc_ext = 0;
 
     for(i = 1; i < argc; i++)
     {
@@ -236,6 +238,9 @@ int main(int argc, char *argv[])
                 case 'a':
                     ops.ae = 0;
                     break;
+                case 'x':
+                    ops.cbc_ext = 1;
+                    break;
                 case 'k':
                     i++;
                     if(i >= argc)
@@ -271,10 +276,16 @@ int main(int argc, char *argv[])
         }
     }
 
+    if(!ops.ae && ops.cbc_ext)
+    {
+        ops.cbc_ext = 0;
+        fprintf(stderr, "warning: using -a removes -x\n");
+    }
+
     if(ops.ae && ops.deriveKey1)
     {
         ops.deriveKey1 = 0;
-        fprintf(stderr, "warning: ignoring -m (makes only sense if -a is also set)\n");
+        fprintf(stderr, "warning: using -m makes only sense if -a is also set and is ignored\n");
     }
 
     if(!fin) fin = stdin;
@@ -287,12 +298,13 @@ int main(int argc, char *argv[])
     if(ops.iteration_count < 1L) ops.iteration_count = 1L;
 
     if(ops.verbose) fprintf(stderr,
-        "\nAES START %s (CBC,SHA226): %s, keySize: %d bytes (%d bit), ae=%d, pass: [%s], PBKDF%d, iterationCount %ld ...\n",
+        "\nAES START %s (CBC,SHA226): %s, keySize: %d bytes (%d bit), ae=%d, cbc_ext=%d, pass: [%s], PBKDF%d, iterationCount %ld ...\n",
         version,
         ops.mode == AES_ENCRYPT ? "ENCRYPT" : "DECRYPT",
         ops.key_len,
         ops.key_len * 8,
         ops.ae,
+        ops.cbc_ext,
         pass,
         ops.deriveKey1 ? 1 : 2,
         ops.iteration_count);
@@ -316,7 +328,7 @@ int main(int argc, char *argv[])
 
     if(ops.verbose || error)
     {
-        fprintf(stderr, "%s (%d) (%s)\n", !error ? "DONE" : "FAILED", error, ops.mode == AES_ENCRYPT ? "encrypt" : "decrypt");
+        fprintf(stderr, "\n%s (%d) (%s)\n", !error ? "DONE" : "FAILED", error, ops.mode == AES_ENCRYPT ? "encrypt" : "decrypt");
     }
 
     memset(&ops, 0, sizeof(encode_ops));

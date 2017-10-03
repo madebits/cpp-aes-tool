@@ -64,7 +64,11 @@ output=$(echo "8hAJbxs4kmhLbVkZg2z7Ixe1CPmJmFTKbcsFwB6lkhC1nH/R1BE5H3+SOAL/NCYWO
 check
 
 setdata R05 "test" "t"
-output=$(echo -n "FvdX1kraqz1hBmFKzp1uEclPtbG6yCARTQVnPHlYE0s7Ch2R4vQxkJhYnJ+fjJhNYilMweKaDI/qDq9SL1yxKcIrrUt/oH5WieDPYgRoP5uNJ/H4ctTu22unB3pb9NsKo2/sJKZkdhI9NV3smxONel4CNBUKf7JqV2H7q4ZClVU=" | base64 -d | ./aes -d -p "${pass}" -k 256 $COMMON)
+output=$(echo -n "Osuygv6tRtU9vYPZWZ+3XYlJnLA6kaH3QzebOdiFe5B9cYC2UVRIWwxGzVr/YjjM4M4eQKC6ZBrwstuI1ABSYDIhgEQs8wiKW2Vbxlcm1nIkBXZm67Abvya1VU4/tthbW8kOZQClckBm9BlLj+oj7dSALRrNqv14ItsUzXnQi2U=" | base64 -d | ./aes -x -d -p "${pass}" -k 256 $COMMON)
+check
+
+setdata R06 "test" "t"
+output=$(echo -n "3Lw3LwGl///luvv44USlJwrebp0tV9pWHRmlR+s88pZWCQSGRqHr4CVwzEL9yZ88ve7KHtONZwCP0+m9ItH053rmCu2/b1E4rFKcAgEmGXWL37dVnVzCB+xGFevQsJIAX+eDHvXTytVW1qnLWERrdH+lZugD2xcJzPXrQRm9J3k=" | base64 -d | ./aes -d -p "${pass}" -k 256 $COMMON)
 check
 
 # defaults
