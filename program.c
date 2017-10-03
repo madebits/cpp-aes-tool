@@ -1,8 +1,8 @@
-#include "encode.h"
 #include <time.h>
 #include <stdlib.h>
 #include <math.h>
 #include <limits.h>
+#include "encode.h"
 
 const char* version = "1.1.0";
 static void show_help()
