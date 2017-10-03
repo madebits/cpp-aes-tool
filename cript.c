@@ -18,6 +18,7 @@ static void show_help()
 	"  [-e | -d]\n"
 	"  [-k keySize]\n"
 	"  [-c iterationCount]\n"
+	"  [-m]\n"
 	"  [-r fileRandomIn]\n"
 	"  [-h startOffset]\n"
 	"  [-a] [-s] [-v] [-?]\n"
