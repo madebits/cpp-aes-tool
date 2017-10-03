@@ -3,8 +3,9 @@
 
 #define MBEDTLS_MD_MAX_SIZE 32
 
-// https://github.com/ARMmbed/mbedtls/blob/master/library/pkcs5.c#L218
-// adapted code
+/** https://github.com/ARMmbed/mbedtls/blob/master/library/pkcs5.c#L218
+  * -- adapted code
+  * /
 static void pbkdf2_hmac(unsigned char *password, int plen,
                 unsigned char *salt, int slen,
                 long iteration_count,
