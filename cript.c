@@ -39,7 +39,7 @@ static void show_help()
 	"  -d                : decrypt mode\n"
 	"  -k keySize        : default 256, valid values are 128, 192, 256\n"
 	"  -c iterationCount : default 1024, should be >= 1\n"
-	"  -m                : default PBKDF1, if -m then PBKDF2 is used"
+	"  -m                : default generation based PBKDF1 (SHA256), if -m then PBKDF2 (SHA256) is used"
 	"  -r fileRandomIn   : a file to read bytes of random data used for\n"
 	"                      IV, salt, and -h option; minimum length should\n"
 	"                      be (48 + startOffset used for -h)\n"
@@ -59,12 +59,11 @@ static void show_help()
 	"  -?                : shows this help (stderr)\n"
 	"\n"
 	"Notes:\n"
-	"- Key generation based on PBKDF1 (PKCS #5 v1.5) with SHA256\n"
-	"- AES (FIPS 197), SHA256 (FIPS 180-2) are from http://xyssl.org/\n"
+	"- AES (FIPS 197), SHA256 (FIPS 180-2), PBKDF2 are from http://xyssl.org/\n"
 	"\n"
 	"Examples:\n"
-	"- To encrypt: aes -i file.txt -o file.bin -p password\n"
-	"- To decrypt: aes -d -i file.bin -o file.txt -p password\n";
+	"- To encrypt: aes -m -i file.txt -o file.bin -p password\n"
+	"- To decrypt: aes -m -d -i file.bin -o file.txt -p password\n";
 	fprintf(stderr, "%s", help);
 }
 
