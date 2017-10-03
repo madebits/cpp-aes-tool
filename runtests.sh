@@ -9,7 +9,7 @@ if [ "$?" != 0 ]; then
     exit 1
 fi
 
-COMMON="-c 1024"
+COMMON="-c 1024 -v"
 
 test="0"
 output=""
@@ -18,10 +18,9 @@ pass=""
 
 function check() 
 {
-    echo "I: ${input} O: ${output}"
-    temp=$(echo -e "${input}")
-    if [[ "${output}" != "${temp}" ]] ; then
-        echo "Failed: ${test} with ${output}"
+    echo "I: [${input}] O: [${output}]"
+    if [ "${input}" != "${output}" ] ; then
+        echo "Failed: [${test}] with [${temp}]"
         exit 1
     else 
         echo "OK: ${test}"
@@ -30,10 +29,9 @@ function check()
 
 function checkfail() 
 {
-    echo "I: ${input} O: ${output}"
-    temp=$(echo -e "${input}")
-    if [[ "${output}" == "${temp}" ]] ; then
-        echo "Failed: ${test} with ${output}"
+    echo "I: [${input}] O: [${output}]"
+    if [ "${input}" = "${output}" ] ; then
+        echo "Failed: [${test}] with [${output}]"
         exit 1
     else 
         echo "OK: ${test}"
@@ -72,94 +70,94 @@ check
 # defaults
 
 setdata D01 "" "t"
-output=$(echo -e "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
 check
 
 setdata D02 "0" "t"
-output=$(echo -e "${input}" | ./aes -p "${pass}" $COMMON | base64 | base64 -d | ./aes -d -p "${pass}" $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | base64 | base64 -d | ./aes -d -p "${pass}" $COMMON)
 check
 
 setdata D03 "01234567" "t"
-output=$(echo -e "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
 check
 
 setdata D04 "012345678" "t"
-output=$(echo -e "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
 check
 
 setdata D05 "012345678" "t"
-output=$(echo -e "${input}" | ./aes -p "${pass}" $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON)
 checkfail
 
 setdata D06 "012345678" "t"
-output=$(echo -e "${input}" | ./aes -p "${pass}" -i - $COMMON | ./aes -d -p "${pass}" -o - $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" -i - $COMMON | ./aes -d -p "${pass}" -o - $COMMON)
 check
 
 # keysizes
 
 setdata K01 "012345678" "t"
-output=$(echo -e "${input}" | ./aes -p "${pass}" -k 128 $COMMON | ./aes -d -p "${pass}" -k 128 $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" -k 128 $COMMON | ./aes -d -p "${pass}" -k 128 $COMMON)
 check
 
 setdata K02 "012345678" "t"
-output=$(echo -e "${input}" | ./aes -p "${pass}" -k 192 $COMMON | ./aes -d -p "${pass}" -k 192 $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" -k 192 $COMMON | ./aes -d -p "${pass}" -k 192 $COMMON)
 check
 
 setdata K03 "012345678" "t"
-output=$(echo -e "${input}" | ./aes -p "${pass}" -k 256 $COMMON | ./aes -d -p "${pass}" -k 256 $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" -k 256 $COMMON | ./aes -d -p "${pass}" -k 256 $COMMON)
 check
 
 setdata K04 "012345678" "t"
-output=$(echo -e "${input}" | ./aes -p "${pass}" -k 256 $COMMON | ./aes -d -p "${pass}" -k 128 $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" -k 256 $COMMON | ./aes -d -p "${pass}" -k 128 $COMMON)
 checkfail
 
 setdata K05 "012345678" "t"
-output=$(echo -e "${input}" | ./aes -p "${pass}" -k 1aa  $COMMON 2>/dev/null | ./aes -d -p "${pass}" -k 128 $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" -k 1aa  $COMMON 2>/dev/null | ./aes -d -p "${pass}" -k 128 $COMMON)
 checkfail
 
 #pass
 
 setdata P01 "012345678" ""
-output=$(echo -e "${input}" | ./aes -p "${pass}" $COMMON 2>/dev/null | ./aes -d -p "${pass}" $COMMON 2>/dev/null)
+output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON 2>/dev/null | ./aes -d -p "${pass}" $COMMON 2>/dev/null)
 checkfail
 
 setdata P02 "012345678" "0"
-output=$(echo -e "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
 check
 
 setdata P03 "012345678" "01234567"
-output=$(echo -e "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
 check
 
 setdata P04 "012345678" "012345678"
-output=$(echo -e "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
 check
 
 setdata P05 "012345678" "012345678"
-output=$(echo -e "${input}" | ./aes -p "${pass}" -k 128 $COMMON | ./aes -d -p "${pass}" -k 128 $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" -k 128 $COMMON | ./aes -d -p "${pass}" -k 128 $COMMON)
 check
 
 # misc
 
 setdata M01 "\n0\n" "t"
-output=$(echo -e "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}"  $COMMON)
+output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}"  $COMMON)
 check
 
 setdata M02 "\n0\n" "t"
-output=$(echo -e "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
-checkfail
+output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
+check
 
 setdata M03 "0123456789abcdef" "t"
-output=$(echo -e "${input}" | ./aes -p "${pass}"  $COMMON | ./aes -d -p "${pass}" $COMMON)
-checkfail
+output=$(echo -n "${input}" | ./aes -p "${pass}"  $COMMON | ./aes -d -p "${pass}" $COMMON)
+check
 
 setdata M04 "0123456789abcdef0123456789abcdef" "t"
-output=$(echo -e "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
-checkfail
+output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
+check
 
 setdata M05 "0123456789abcdef0" "t"
-output=$(echo -e "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
-checkfail
+output=$(echo -n "${input}" | ./aes -p "${pass}" $COMMON | ./aes -d -p "${pass}" $COMMON)
+check
 
 echo Done --------------------
 

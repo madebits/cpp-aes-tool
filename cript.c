@@ -87,7 +87,6 @@ int main(int argc, char *argv[])
     ops.verbose = 0;
     ops.deriveKey1 = 0;
     ops.ae = 1;
-
     
     for(i = 1; i < argc; i++)
     {
@@ -267,7 +266,7 @@ int main(int argc, char *argv[])
             return 1;
         }
     }
-
+    
     if(!fin) fin = stdin;
     if(!fout) fout = stdout;
     if(!pass || (pass_length <= 0))

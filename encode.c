@@ -103,7 +103,7 @@ int encode(
             derive_key(0, ae_block, AE_BLOCK_LEN, password, password_len, ae_salt, AE_BLOCK_LEN, ops->iteration_count);
             sha2_hmac_starts( &h_ctx, ae_block, AE_BLOCK_LEN, 0 );
             sha2_hmac_update( &h_ctx, ae_salt, AE_BLOCK_LEN);
-            if(fwrite(&ae_salt[0], 1, AE_BLOCK_LEN, fout) != AE_BLOCK_LEN) return 1;
+            if(fwrite(&ae_salt[0], (size_t)1, AE_BLOCK_LEN, fout) != AE_BLOCK_LEN) return 1;
         }
         fill_random(&output[0], BLOCK_LEN, frnd, ops->verbose);
         dump("iv   (encrypt)", output, BLOCK_LEN, ops->verbose);
@@ -112,20 +112,20 @@ int encode(
         derive_key(ops->deriveKey1, key, ops->key_len, password, password_len, salt, salt_len, ops->iteration_count);
         aes_setkey_enc(&ctx, key, key_bits);
         memset(key, 0, KEY_LEN_MAX * sizeof(unsigned char));
-        if(fwrite(&output[0], 1, BLOCK_LEN, fout) != BLOCK_LEN) return 1;
-        if(fwrite(&salt[0], 1, salt_len, fout) != salt_len) return 1;
+        if(fwrite(&output[0], (size_t)1, BLOCK_LEN, fout) != BLOCK_LEN) return 1;
+        if(fwrite(&salt[0], (size_t)1, salt_len, fout) != salt_len) return 1;
         break;
     case AES_DECRYPT:
         if(ops->ae) 
         {
-            if(fread(&ae_salt[0], 1, AE_BLOCK_LEN, fin) != AE_BLOCK_LEN) return 1;
+            if(fread(&ae_salt[0], (size_t)1, AE_BLOCK_LEN, fin) != AE_BLOCK_LEN) return 1;
             dump("ae: salt (decrypt)", ae_salt, AE_BLOCK_LEN, ops->verbose);
             derive_key(0, ae_block, AE_BLOCK_LEN, password, password_len, ae_salt, AE_BLOCK_LEN, ops->iteration_count);
             sha2_hmac_starts( &h_ctx, ae_block, AE_BLOCK_LEN, 0 );
             sha2_hmac_update( &h_ctx, ae_salt, AE_BLOCK_LEN);
         }
-        if(fread(&output[0], 1, BLOCK_LEN, fin) != BLOCK_LEN) return 1;
-        if(fread(&salt[0], 1, salt_len, fin) != salt_len) return 1;
+        if(fread(&output[0], (size_t)1, BLOCK_LEN, fin) != BLOCK_LEN) return 1;
+        if(fread(&salt[0], (size_t)1, salt_len, fin) != salt_len) return 1;
         dump("iv   (decrypt)", output, BLOCK_LEN, ops->verbose);
         dump("salt (decrypt)", salt, salt_len, ops->verbose);
         memcpy(&iv[0], &output[0], BLOCK_LEN * sizeof(unsigned char));
@@ -198,11 +198,11 @@ int encode(
         
         memcpy(&iv[0], &output[0], BLOCK_LEN * sizeof(unsigned char));
         aes_crypt_cbc(&ctx, ops->mode, BLOCK_LEN, &iv[0], &ae_block[0], &output[0]);
-        if(fwrite(&output[0], 1, BLOCK_LEN, fout) != BLOCK_LEN) return 1;
+        if(fwrite(&output[0], (size_t)1, BLOCK_LEN, fout) != BLOCK_LEN) return 1;
         
         memcpy(&iv[0], &output[0], BLOCK_LEN * sizeof(unsigned char));
         aes_crypt_cbc(&ctx, ops->mode, BLOCK_LEN, &iv[0], &ae_block[0 + BLOCK_LEN], &output[0]);
-        if(fwrite(&output[0], 1, BLOCK_LEN, fout) != BLOCK_LEN) return 1;
+        if(fwrite(&output[0], (size_t)1, BLOCK_LEN, fout) != BLOCK_LEN) return 1;
                 
         // if(fwrite(&ae_block[0], 1, AE_BLOCK_LEN, fout) != AE_BLOCK_LEN) return 1;
     }
