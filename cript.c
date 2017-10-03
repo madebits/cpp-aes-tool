@@ -8,9 +8,7 @@ static void show_help()
 	const char* help = 
 	"**********************************************\n"
 	"* AES - Encrypt a file using AES in CBC mode *\n"
-	"* (c) 2008 Vasian Cepa                       *\n"
-	"* Version 1.0.7                              *\n"
-	"* https://madebits.github.io                 *\n"        
+	"* Version 1.0.8                              *\n"
 	"**********************************************\n"
 	"\n"
 	"Usage: aes\n"
@@ -33,7 +31,9 @@ static void show_help()
 	"                      if fileOut exists it will be overwritten,\n"
 	"                      if -o is not specified, or -o - then stdout\n"
 	"                      is used\n"
-	"  -p password       : password (required)\n"
+	"  -p password       : password (required or -f)\n"
+	"  -f passwordFile   : read password from first file line (required or -p)\n"
+	"                      at most 256 first bytes are read\n"
 	"  -e                : encrypt mode (default)\n"
 	"  -d                : decrypt mode\n"
 	"  -k keySize        : default 256, valid values are 128, 192, 256\n"
@@ -97,6 +97,7 @@ int main(int argc, char *argv[])
 	FILE* fin = 0;
 	FILE* fout = 0;
 	FILE* frnd = 0;
+	FILE* fpass = 0;
 	int i = 1;
 	int key_size = 32;
 	long icount = 1024L;
@@ -109,6 +110,10 @@ int main(int argc, char *argv[])
 	int auto_ch  = 0;
 	int pass_sum = 0;
 	int salt_len_equals_keysize = 1;
+	char passBuffer[257];
+	int passBufferLength = 256;
+	int passBufferRead = 0;
+	int pi = 0;
 	
 	for(; i < argc; i++)
 	{
@@ -205,6 +210,43 @@ int main(int argc, char *argv[])
 						skipped();
 					}
 					break;
+				case 'f':
+					if(!fpass) 
+					{	
+						i++;
+						if(i >= argc)
+						{
+							fprintf(stderr, "Error: -f password file not specified\n"); 
+							return 1;
+						}
+						fpass = (strcmp(argv[i], "-") == 0) ? stdin : fopen(argv[i], "rb");
+						if(fpass == 0)
+						{
+							fprintf(stderr, "Error: -f password file not specified or cannot be read\n"); 
+							return 1;
+						}
+						passBufferRead = fread(&passBuffer[0], 1, passBufferLength * sizeof(char), fpass);
+						fclose(fpass);
+						passBuffer[passBufferRead] = '\0';
+						passBuffer[passBufferLength + 1] = '\0';
+						for(pi = 0; pi < passBufferRead; pi++)
+						{
+							switch(passBuffer[pi])
+							{
+								case '\r':
+								case '\n':
+									passBuffer[pi] = '\0';
+									break;
+							}
+						}
+						pass = passBuffer;
+						pass_length = (int)strlen(pass);
+					}
+					else
+					{
+						skipped();
+					}
+					break;
 				case 'e':
 					mode = AES_ENCRYPT;
 					break;
@@ -212,7 +254,13 @@ int main(int argc, char *argv[])
 					mode = AES_DECRYPT;
 					break;
 				case 'k':
-					key_size = read_int(argv[++i]) / 8;
+				    i++;
+					if(i >= argc)
+					{
+						fprintf(stderr, "Error: -k size not specified\n"); 
+						return 1;
+					}
+					key_size = read_int(argv[i]) / 8;
 					if((key_size != 16) && (key_size != 24) && (key_size != 32))
 					{
 						fprintf(stderr, "Error: -k keySize can be one of 128, 192, 256\n");
@@ -220,10 +268,22 @@ int main(int argc, char *argv[])
 					}
 					break;
 				case 'c':
-					icount = read_long(argv[++i]);
+				    i++;
+					if(i >= argc)
+					{
+						fprintf(stderr, "Error: -c count not specified\n"); 
+						return 1;
+					}
+					icount = read_long(argv[i]);
 					break;
 				case 'h':
-					start_offset = read_int(argv[++i]);
+					i++;
+					if(i >= argc)
+					{
+						fprintf(stderr, "Error: -h offset not specified\n"); 
+						return 1;
+					}
+					start_offset = read_int(argv[i]);
 					break;
 				case 'a':
 					auto_ch = 5;
