@@ -1,225 +1,232 @@
 #include "encode.h"
 #include "xyssl/aes.h"
 #include "pbkdf2.h"
+#include "xyssl/sha2.h"
+#include "stream.h"
+
+#ifndef BLOCK_LEN
+#define BLOCK_LEN 16
+#endif
+
+#define AE_BLOCK_LEN 32
+#define KEY_LEN_MAX 32
 
 /** well, salt, iv only need to be different for each run */
 static void fill_random(unsigned char b[], int b_len, FILE* frnd, int verbose)
 {
-	int i = 0;
+    int i = 0;
 
-	if(frnd)
-	{
-		i = fread(&b[0], 1,  b_len, frnd);
-	}
-
-	if(verbose) fprintf(stderr, "| Read %d of %d random bytes from file\n", i, b_len);
-
-	for(; i <  b_len; i++)
-	{
-		b[i] = rand() % 256;
-	}
-}
-
-static int write_random_data(FILE* fout, int start_offset, FILE* frnd, int verbose)
-{
-	int i = 0;
-	unsigned char buffer[512];
-	int buffer_len = 512;
-	int full_blocks = 0;
-	int remainder = 0;
-
-	if(start_offset <= 0) return 0;
-	full_blocks = start_offset / buffer_len;
-	remainder = start_offset % buffer_len;
-
-	for(; i < full_blocks; i++)
-	{
-		fill_random(&buffer[0], buffer_len, frnd, verbose);
-		if(fwrite(&buffer[0], 1, buffer_len, fout) != buffer_len) return 1;
-	}
-
-	if(remainder > 0)
-	{
-		fill_random(&buffer[0], remainder, frnd, verbose);
-		if(fwrite(&buffer[0], 1, remainder, fout) != remainder) return 1;
-	}
-
-	return 0;
-}
-
-static int read_to_offset(FILE* fin, int start_offset)
-{
-	int i = 0;
-	unsigned char buffer[512];
-	int buffer_len = 512;
-	int full_blocks = 0;
-	int remainder = 0;
-
-	if(start_offset <= 0) return 0;
-	full_blocks = start_offset / buffer_len;
-	remainder = start_offset % buffer_len;
-
-	for(; i < full_blocks; i++)
-	{
-		if(fread(&buffer[0], 1, buffer_len, fin) != buffer_len) return 1;
-	}
-
-	if(remainder > 0)
-	{
-		if(fread(&buffer[0], 1, remainder, fin) != remainder) return 1;
-	}
-	
-	return 0;
+    if(frnd)
+    {
+        i = fread(&b[0], 1,  b_len, frnd);
+        if(verbose) fprintf(stderr, "| Read %d of %d random bytes from -r file\n", i, b_len);
+        if(i == (size_t)b_len)
+        {
+            return;
+        }
+    }
+    
+    if(verbose) fprintf(stderr, "| Reading %d of %d random bytes from rand() - weak!!!\n", b_len - i, b_len);
+    for(; i <  b_len; i++)
+    {
+        b[i] = rand() % 256;
+    }
 }
 
 // ms-help://MS.VSCC/MS.MSDNVS/security/aboutcrypto_8jjb.htm
 // (PKCS), PKCS #5, section 6.2
 void pad_block(unsigned char b[], int b_len, int block_len)
 {
-	int pad = block_len - b_len;
-	if(pad <= 0) return;
-	memset(&b[b_len], pad, pad);
+    int pad = block_len - b_len;
+    if(pad <= 0) return;
+    memset(&b[b_len], pad, pad);
 }
 
 /** return 0 on success, CBC mode */
 int encode(
-	FILE* fin,
-	FILE* fout,
-	int mode,
-	int key_len,
-	unsigned char password[],
-	int password_len,
-	long iteration_count,
-	int salt_len_equals_keysize,
-	FILE* frnd,
-	int start_offset,
-	int verbose,
-	int deriveKeyMode
-	)
+    FILE* fin,
+    FILE* fout,
+    unsigned char password[],
+    int password_len,
+    FILE* frnd,
+    encode_ops* ops
+    )
 {
-	aes_context ctx;
-	unsigned char key[32];
-	int key_bits = key_len * 8;
-	unsigned char salt[32];
-	int salt_len = 16;
-	int block_len = 16;
-	unsigned char iv[16];
-	unsigned char input[16];
-	unsigned char output[16]; /** used initially as iv */
-	size_t read_count = 0;
-	int last_block = 0;
-	int can_read = 1;
+    sha2_context h_ctx;
+    aes_context ctx;
+    unsigned char key[KEY_LEN_MAX];
+    int key_bits = ops->key_len * 8;
+    unsigned char salt[KEY_LEN_MAX];
+    int salt_len = 16;
+    unsigned char iv[BLOCK_LEN];
+    unsigned char input[BLOCK_LEN];
+    unsigned char output[BLOCK_LEN]; /** used initially as iv */
+    int read_res = 0;
+    int last_block = 0;
+    int i = 0;
+    stream_ctx stream;
+    int len = 0;
+    
+    unsigned char ae_salt[AE_BLOCK_LEN];
+    unsigned char ae_block[AE_BLOCK_LEN];
+    unsigned char ae_block_pad[AE_BLOCK_LEN];
+    
+    if(!fin || !fout) return 1;
+    if((key_bits != 128) && (key_bits != 192) && (key_bits != 256))
+    {
+        return 1;
+    }
+    if(password_len <= 0) return 1;
+    if(ops->salt_len_equals_keysize)
+    {
+        salt_len = ops->key_len;
+    }
+    // if(ops->verbose) fprintf(stderr, "| Salt length %d bytes\n", salt_len);
+    
+    memset(key, 0, KEY_LEN_MAX * sizeof(unsigned char));
+    memset(salt, 0, salt_len * sizeof(unsigned char));
+    memset(input, 0, BLOCK_LEN * sizeof(unsigned char));
+    memset(output, 0, BLOCK_LEN * sizeof(unsigned char));
+    
+    memset(ae_salt, 0, AE_BLOCK_LEN * sizeof(unsigned char));
+    memset(ae_block, 0, AE_BLOCK_LEN * sizeof(unsigned char));
+    memset(ae_block_pad, 0, AE_BLOCK_LEN * sizeof(unsigned char));
 
-	if(!fin || !fout) return 1;
-	if((key_bits != 128) && (key_bits != 192) && (key_bits != 256))
-	{
-		return 1;
-	}
-	if(password_len <= 0) return 1;
-	if(salt_len_equals_keysize)
-	{
-		salt_len = key_len;
-	}
-	if(verbose) fprintf(stderr, "| Salt length %d bytes\n", salt_len);
-	
-	memset(key, 0, 32 * sizeof(unsigned char));
-	memset(salt, 0, salt_len * sizeof(unsigned char));
-	memset(input, 0, block_len * sizeof(unsigned char));
-	memset(output, 0, block_len * sizeof(unsigned char));
+    // header
+    switch(ops->mode)
+    {
+    case AES_ENCRYPT:
+        if(ops->ae) 
+        {
+            fill_random(&ae_salt[0], AE_BLOCK_LEN, frnd, ops->verbose);
+            dump("ae: salt (encrypt)", ae_salt, AE_BLOCK_LEN, ops->verbose);
+            derive_key(0, ae_block, AE_BLOCK_LEN, password, password_len, ae_salt, AE_BLOCK_LEN, ops->iteration_count);
+            sha2_hmac_starts( &h_ctx, ae_block, AE_BLOCK_LEN, 0 );
+            sha2_hmac_update( &h_ctx, ae_salt, AE_BLOCK_LEN);
+            if(fwrite(&ae_salt[0], 1, AE_BLOCK_LEN, fout) != AE_BLOCK_LEN) return 1;
+        }
+        fill_random(&output[0], BLOCK_LEN, frnd, ops->verbose);
+        dump("iv   (encrypt)", output, BLOCK_LEN, ops->verbose);
+        fill_random(&salt[0], salt_len, frnd, ops->verbose);
+        dump("salt (encrypt)", salt, salt_len, ops->verbose);
+        derive_key(ops->deriveKey1, key, ops->key_len, password, password_len, salt, salt_len, ops->iteration_count);
+        aes_setkey_enc(&ctx, key, key_bits);
+        memset(key, 0, KEY_LEN_MAX * sizeof(unsigned char));
+        if(fwrite(&output[0], 1, BLOCK_LEN, fout) != BLOCK_LEN) return 1;
+        if(fwrite(&salt[0], 1, salt_len, fout) != salt_len) return 1;
+        break;
+    case AES_DECRYPT:
+        if(ops->ae) 
+        {
+            if(fread(&ae_salt[0], 1, AE_BLOCK_LEN, fin) != AE_BLOCK_LEN) return 1;
+            dump("ae: salt (decrypt)", ae_salt, AE_BLOCK_LEN, ops->verbose);
+            derive_key(0, ae_block, AE_BLOCK_LEN, password, password_len, ae_salt, AE_BLOCK_LEN, ops->iteration_count);
+            sha2_hmac_starts( &h_ctx, ae_block, AE_BLOCK_LEN, 0 );
+            sha2_hmac_update( &h_ctx, ae_salt, AE_BLOCK_LEN);
+        }
+        if(fread(&output[0], 1, BLOCK_LEN, fin) != BLOCK_LEN) return 1;
+        if(fread(&salt[0], 1, salt_len, fin) != salt_len) return 1;
+        dump("iv   (decrypt)", output, BLOCK_LEN, ops->verbose);
+        dump("salt (decrypt)", salt, salt_len, ops->verbose);
+        memcpy(&iv[0], &output[0], BLOCK_LEN * sizeof(unsigned char));
+        derive_key(ops->deriveKey1, key, ops->key_len, password, password_len, salt, salt_len, ops->iteration_count);
+        aes_setkey_dec(&ctx, key, key_bits);
+        memset(key, 0, KEY_LEN_MAX * sizeof(unsigned char));
+        break;
+    default:
+        return 1;
+    }    
 
-	// header
-	switch(mode)
-	{
-	case AES_ENCRYPT:
-		fill_random(&output[0], block_len, frnd, verbose);
-		fill_random(&salt[0], salt_len, frnd, verbose);
-		derive_key(deriveKeyMode, key, key_len, password, password_len, salt, salt_len, iteration_count);
-		aes_setkey_enc(&ctx, key, key_bits);
-		memset(key, 0, 32 * sizeof(unsigned char));
-		if(write_random_data(fout, start_offset, frnd, verbose) != 0) return 1;
-		if(fwrite(&output[0], 1, block_len, fout) != block_len) return 1;
-		if(fwrite(&salt[0], 1, salt_len, fout) != salt_len) return 1;
-		break;
-	case AES_DECRYPT:
-		if(start_offset > 0)
-		{
-			if(read_to_offset(fin, start_offset) != 0) return 1;
-		}
-		if(fread(&output[0], 1, block_len, fin) != block_len) return 1;
-		if(fread(&salt[0], 1, salt_len, fin) != salt_len) return 1;
-		memcpy(&iv[0], &output[0], block_len * sizeof(unsigned char));
-		derive_key(deriveKeyMode, key, key_len, password, password_len, salt, salt_len, iteration_count);
-		aes_setkey_dec(&ctx, key, key_bits);
-		memset(key, 0, 32 * sizeof(unsigned char));
-		break;
-	default:
-		return 1;
-	}
+    stream_init(&stream, ops->mode == AES_ENCRYPT ? 1 : 0, ops->ae ? 2 : 0, ops->verbose);
 
-	// rest
-	while(1)
-	{
-		if(can_read)
-		{
-			read_count = fread(&input[0], 1, block_len, fin);
-		}
-		
-		if(read_count <= 0)
-		{
-			break;
-		}
+    // rest
+    while(1)
+    {
+        if(last_block) 
+        {
+            break;
+        }
+        read_res = stream_read_next(&stream, fin, input);
+        if(read_res < 0) 
+        { 
+            return 1;
+        }
+        last_block = (read_res == 1); 
+        
+        /* ae: update with input */
+        if((ops->mode == AES_ENCRYPT) && ops->ae) 
+        {
+            sha2_hmac_update( &h_ctx, &input[0], BLOCK_LEN);    
+        }
 
-		if(read_count < (size_t)block_len)
-		{
-			switch(mode)
-			{
-			case AES_ENCRYPT:
-				pad_block(&input[0], (int)read_count, block_len);
-				break;
-			case AES_DECRYPT:
-				return 1; // error
-			}
-		}
+        dump(ops->mode == AES_ENCRYPT ? "in  (encrypt)" : "in  (decrypt)", input, BLOCK_LEN, ops->verbose);
 
-		if(mode == AES_ENCRYPT)
-		{
-			memcpy(&iv[0], &output[0], block_len * sizeof(unsigned char));
-		}
-		
-		aes_crypt_cbc(&ctx, mode, block_len, &iv[0], &input[0], &output[0]);
+        /* convert block */
+        if(ops->mode == AES_ENCRYPT)
+        {
+            memcpy(&iv[0], &output[0], BLOCK_LEN * sizeof(unsigned char));
+        }
+        aes_crypt_cbc(&ctx, ops->mode, BLOCK_LEN, &iv[0], &input[0], &output[0]);
+        if(ops->mode == AES_DECRYPT)
+        {
+            memcpy(&iv[0], &input[0], BLOCK_LEN * sizeof(unsigned char));
+        }
+        
+        dump(ops->mode == AES_ENCRYPT ? "out (encrypt)" : "out (decrypt)", output, BLOCK_LEN, ops->verbose);
+                
+        /* ae: update with output */
+        if((ops->mode == AES_DECRYPT) && ops->ae) 
+        {
+            sha2_hmac_update( &h_ctx, &output[0], BLOCK_LEN);   
+        }        
 
-		if(mode == AES_DECRYPT)
-		{
-			memcpy(&iv[0], &input[0], block_len * sizeof(unsigned char));
-		}
+        if(last_block && (output[BLOCK_LEN - 1] < BLOCK_LEN))
+        {
+            len = BLOCK_LEN - output[BLOCK_LEN - 1];
+            if(fwrite(&output[0], 1, len, fout) != len) return 1;
+        }
+        else
+        {
+            if(fwrite(&output[0], 1, BLOCK_LEN, fout) != BLOCK_LEN) return 1;
+        }
+    }
+    
+    if((ops->mode == AES_ENCRYPT) && ops->ae)
+    {
+        sha2_hmac_finish( &h_ctx, ae_block);
+        dump("ae: data (encrypt)", ae_block, AE_BLOCK_LEN, ops->verbose);
+        if(fwrite(&ae_block[0], 1, AE_BLOCK_LEN, fout) != AE_BLOCK_LEN) return 1;
+    }
+    if((ops->mode == AES_DECRYPT) && ops->ae)
+    {
+        sha2_hmac_finish( &h_ctx, ae_block);
+        dump("ae: data (decrypt)", ae_block, AE_BLOCK_LEN, ops->verbose);
+        stream_read_pad(&stream, ae_block_pad);
+        dump("ae: pad  (decrypt)", ae_block_pad, AE_BLOCK_LEN, ops->verbose);
+        for(i = 0; i < AE_BLOCK_LEN; i++)
+        {
+            if(ae_block[i] != ae_block_pad[i])
+            {
+                if(ops->verbose) fprintf(stderr, "| AE check failed!\n");
+                return 1;
+            }
+        }
+    }
+    
+    fflush(fout);
 
-		if(mode == AES_DECRYPT)
-		{
-			read_count = fread(&input[0], 1, block_len, fin);
-			if(read_count < (size_t)block_len)
-			{
-				last_block = 1;
-			}
-			can_read = 0;
-		}
-
-		if(last_block)
-		{
-			if(output[block_len - 1] < block_len)
-			{
-				int len = block_len - output[block_len - 1];
-				if(fwrite(&output[0], 1, len, fout) != len) return 1;
-			}
-			else
-			{
-				if(fwrite(&output[0], 1, block_len, fout) != block_len) return 1;
-			}
-			break;
-		}
-
-		if(fwrite(&output[0], 1, block_len, fout) != block_len) return 1;
-	}
-
-	memset(&ctx, 0, sizeof(aes_context));
-	return 0;
+    memset(&h_ctx, 0, sizeof(sha2_context));
+    memset(&ctx, 0, sizeof(aes_context));
+    memset(&stream, 0, sizeof(stream_ctx));
+    
+    memset(key, 0, KEY_LEN_MAX * sizeof(unsigned char));
+    memset(salt, 0, salt_len * sizeof(unsigned char));
+    memset(input, 0, BLOCK_LEN * sizeof(unsigned char));
+    memset(output, 0, BLOCK_LEN * sizeof(unsigned char));
+    
+    memset(ae_salt, 0, AE_BLOCK_LEN * sizeof(unsigned char));
+    memset(ae_block, 0, AE_BLOCK_LEN * sizeof(unsigned char));
+    memset(ae_block_pad, 0, AE_BLOCK_LEN * sizeof(unsigned char));
+    
+    return 0;
 }

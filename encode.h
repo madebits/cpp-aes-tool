@@ -12,21 +12,26 @@
 extern "C" {
 #endif
 
+typedef struct
+{
+    int mode;
+    int key_len;
+    int salt_len_equals_keysize;
+    long iteration_count;
+    int verbose;
+    int deriveKey1;
+    int ae; /* 0 or 1 */
+} encode_ops;
+
 /** return 0 on success, CBC mode */
 int encode(
-	FILE* fin,
-	FILE* fout,
-	int mode,
-	int keyLen,
-	unsigned char password[],
-	int password_len,
-	long iteration_count,
-	int salt_len_equals_keysize,
-	FILE* frnd,
-	int startOffset,
-	int verbose,
-	int deriveKeyMode
-	);
+    FILE* fin,
+    FILE* fout,
+    unsigned char password[],
+    int password_len,
+    FILE* frnd,
+    encode_ops* ops
+    );
 
 #ifdef __cplusplus
 }

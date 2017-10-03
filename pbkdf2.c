@@ -5,13 +5,13 @@
 
 // https://github.com/ARMmbed/mbedtls/blob/master/library/pkcs5.c#L218
 // adapted code
-void pbkdf2_hmac(unsigned char *password, int plen,
-				unsigned char *salt, int slen,
+static void pbkdf2_hmac(unsigned char *password, int plen,
+                unsigned char *salt, int slen,
                 long iteration_count,
                 int key_length,
                 unsigned char *output)
 {
-	sha2_context ctx;
+    sha2_context ctx;
     int ret, j;
     long i = 0L;
     unsigned char md1[MBEDTLS_MD_MAX_SIZE];
@@ -65,69 +65,69 @@ void pbkdf2_hmac(unsigned char *password, int plen,
 ////////////////////////////////////////////////////////////////////////
 
 /** PBKDF1 (PKCS #5 v1.5) */
-void derive_key_1(
-	unsigned char key[],
-	int key_len, /** in bytes */
-	unsigned char password[],
-	int password_len,
-	unsigned char salt[],
-	int salt_len,
-	long iteration_count
-	)
+static void derive_key_1(
+    unsigned char key[],
+    int key_len, /** in bytes */
+    unsigned char password[],
+    int password_len,
+    unsigned char salt[],
+    int salt_len,
+    long iteration_count
+    )
 {
-	sha2_context ctx;
-	unsigned char output[32];
-	long i = 0L;
+    sha2_context ctx;
+    unsigned char output[32];
+    long i = 0L;
+    
+    if(key_len > 32) key_len = 32;
+    if(iteration_count < 0) iteration_count = 1024L;
 
-	if(key_len > 32) key_len = 32;
-	if(iteration_count < 0) iteration_count = 1024L;
+    // first iteration, input = password + salt
+    memset(&ctx, 0, sizeof(sha2_context));
+    sha2_starts(&ctx, 0);
+    sha2_update(&ctx, &password[0], password_len);
+    memset(&password[0], 0, password_len * sizeof(unsigned char));
 
-	// first iteration, input = password + salt
-	memset(&ctx, 0, sizeof(sha2_context));
-	sha2_starts(&ctx, 0);
-	sha2_update(&ctx, &password[0], password_len);
-	memset(&password[0], 0, password_len * sizeof(unsigned char));
+    if(salt_len > 0)
+    {
+        sha2_update(&ctx, &salt[0], salt_len);
+    }
+    sha2_finish(&ctx, &output[0]);
 
-	if(salt_len > 0)
-	{
-		sha2_update(&ctx, &salt[0], salt_len);
-	}
-	sha2_finish(&ctx, &output[0]);
+    // other iterations
+    for(i = 1; i < iteration_count; i++)
+    {
+        memset(&ctx, 0, sizeof(sha2_context));
+        sha2_starts(&ctx, 0);
+        sha2_update(&ctx, &output[0], 32);
+        sha2_finish(&ctx, &output[0]);
+    }
 
-	// other iterations
-	for(i = 1; i < iteration_count; i++)
-	{
-		memset(&ctx, 0, sizeof(sha2_context));
-		sha2_starts(&ctx, 0);
-		sha2_update(&ctx, &output[0], 32);
-		sha2_finish(&ctx, &output[0]);
-	}
-
-	// done, copy key bytes
-	memcpy(&key[0], &output[0], key_len * sizeof(unsigned char));
+    // done, copy key bytes
+    memcpy(&key[0], &output[0], key_len * sizeof(unsigned char));
 }
 
 ////////////////////////////////////////////////////////////////////////
 
 void derive_key(
-	int mode,
-	unsigned char key[],
-	int key_len, /** in bytes */
-	unsigned char password[],
-	int password_len,
-	unsigned char salt[],
-	int salt_len,
-	long iteration_count
-	)
+    int use1,
+    unsigned char key[],
+    int key_len, /** in bytes */
+    unsigned char password[],
+    int password_len,
+    unsigned char salt[],
+    int salt_len,
+    long iteration_count
+    )
 {
-	if(mode == 0)
-	{
-		derive_key_1(&key[0], key_len, &password[0], password_len, &salt[0], salt_len, iteration_count);
-	} 
-	else
-	{
-		pbkdf2_hmac(&password[0], password_len, &salt[0], salt_len, iteration_count, key_len, &key[0]);
-	}
+    if(use1)
+    {
+        derive_key_1(&key[0], key_len, &password[0], password_len, &salt[0], salt_len, iteration_count);
+    } 
+    else
+    {
+        pbkdf2_hmac(&password[0], password_len, &salt[0], salt_len, iteration_count, key_len, &key[0]);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
