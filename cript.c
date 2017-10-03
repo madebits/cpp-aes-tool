@@ -8,7 +8,7 @@ static void show_help()
 	const char* help = 
 	"**********************************************\n"
 	"* AES - Encrypt a file using AES in CBC mode *\n"
-	"* Version 1.0.8                              *\n"
+	"* Version 1.0.8a                             *\n"
 	"**********************************************\n"
 	"\n"
 	"Usage: aes\n"
@@ -33,8 +33,8 @@ static void show_help()
 	"                      is used\n"
 	"  -p password       : password (required or -f)\n"
 	"  -f passwordFile   : read password from first file line (required or -p)\n"
+	"                      at most 1024 first bytes are read from first line\n"
 	"                      if -f - then stdin is used\n"
-	"                      at most 256 first bytes are read\n"
 	"  -e                : encrypt mode (default)\n"
 	"  -d                : decrypt mode\n"
 	"  -k keySize        : default 256, valid values are 128, 192, 256\n"
@@ -111,8 +111,8 @@ int main(int argc, char *argv[])
 	int auto_ch  = 0;
 	int pass_sum = 0;
 	int salt_len_equals_keysize = 1;
-	char passBuffer[257];
-	int passBufferLength = 256;
+	char passBuffer[1025];
+	int passBufferLength = 1024;
 	int passBufferRead = 0;
 	int pi = 0;
 	
