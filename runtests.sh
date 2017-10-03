@@ -1,6 +1,6 @@
 #/bin/bash
 
-gcc -std=c99 -o aes cript.c encode.c sha2.c aes.c pbkdf2.c
+make
 
 test="0"
 output=""
@@ -9,31 +9,31 @@ pass=""
 
 function check() 
 {
-	temp=$(echo -e "${input}")
-	if [[ "${output}" != "${temp}" ]] ; then
-		echo "Failed: ${test} with ${output}"
-		exit 1
-	else 
-		echo "OK: ${test}"
-	fi
+    temp=$(echo -e "${input}")
+    if [[ "${output}" != "${temp}" ]] ; then
+        echo "Failed: ${test} with ${output}"
+        exit 1
+    else 
+        echo "OK: ${test}"
+    fi
 }
 
 function checkfail() 
 {
-	temp=$(echo -e "${input}")
-	if [[ "${output}" == "${temp}" ]] ; then
-		echo "Failed: ${test}"
-		exit 1
-	else 
-		echo "OK: ${test}"
-	fi
+    temp=$(echo -e "${input}")
+    if [[ "${output}" == "${temp}" ]] ; then
+        echo "Failed: ${test}"
+        exit 1
+    else 
+        echo "OK: ${test}"
+    fi
 }
 
 function setdata() 
 {
-	test="$1"
-	input="$2"
-	pass="$3"
+    test="$1"
+    input="$2"
+    pass="$3"
 }
 
 # regression
@@ -170,4 +170,4 @@ output=$(echo -e "${input}" | ./aes -p p1 -k 256 -a | ./aes -p p2 -k 128 -a | ./
 
 echo Done
 
-rm ./aes
+make clean
