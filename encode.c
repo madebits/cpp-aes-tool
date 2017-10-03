@@ -19,14 +19,14 @@ static void fill_random(unsigned char b[], int b_len, FILE* frnd, int verbose)
     if(frnd)
     {
         i = (int)(fread(b, (size_t)1, BSIZE(b_len), frnd) / sizeof(unsigned char));
-        if(verbose) fprintf(stderr, "Read %d of %d random bytes from -r file\n", i, b_len);
+        if(verbose) fprintf(stderr, "random: read %d of %d bytes from -r file\n", i, b_len);
         if(i == b_len)
         {
             return;
         }
     }
 
-    if(verbose) fprintf(stderr, "Using %d of %d random bytes from rand() - weak!!!\n", b_len - i, b_len);
+    fprintf(stderr, "warning: using %d of %d random bytes from rand() - weak!!!\n", b_len - i, b_len);
     for(; i <  b_len; i++)
     {
         b[i] = rand() % 256;
