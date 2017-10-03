@@ -1,5 +1,5 @@
 #include "encode.h"
-#include <time.h> // for srand
+#include <time.h>
 #include <stdlib.h>
 #include <math.h>
 #include <limits.h>
@@ -34,18 +34,22 @@ static void show_help()
     "                      if -f - then stdin is used\n"
     "  -e                : encrypt mode (default)\n"
     "  -d                : decrypt mode\n"
-    "  -k keySize        : default 256, valid values are 128, 192, 256\n"
+
     "  -c iterationCount : default 500000, should be >= 1\n"
-    "  -m                : use PBKDF1 (SHA256) for key generation,\n"
-    "                      default is PBKDF2 (SHA256)\n"
     "  -r fileRandomIn   : a file to read bytes of random data for IV, salt\n"
     "                      if not set or shorter than needed\n"
     "                      that the rest is filled with C rand() data\n"
     "                      on Linux use /dev/urandom as fileRandomIn (default)\n"
+    "\n"
+    "  -k keySize        : default 256, valid values are 128, 192, 256\n"
     "  -a                : do not use authenticated encryption (ae)\n"
     "                      default is to use authenticated encryption\n"
+    "  -m                : use PBKDF1 (SHA256) for key generation,\n"
+    "                      default is PBKDF2 (SHA256)\n"
+    "                      ignored if -a is not set\n"
     "  -s                : if specified salt is 16 bytes, if not specified\n"
     "                      then salt as long as -k keySize (default)\n"
+    "\n"
     "  -v                : verbose (stderr)\n"
     "  -?                : shows this help (stderr)\n"
     "\n"
@@ -62,7 +66,7 @@ static void show_help()
 
 #define read_long(a) strtol((a), (char **)NULL, 10)
 #define read_int(a) (int)strtol((a), (char **)NULL, 10)
-#define skipped() if(ops.verbose) fprintf(stderr, "Warning: skipped: %s\n", argv[i]);
+#define skipped() if(ops.verbose) fprintf(stderr, "warning: skipped: %s\n", argv[i]);
 
 int main(int argc, char *argv[])
 {
@@ -109,13 +113,13 @@ int main(int argc, char *argv[])
                         i++;
                         if(i >= argc)
                         {
-                            fprintf(stderr, "Error: -i input file not specified\n");
+                            fprintf(stderr, "error: -i input file not specified\n");
                             return 1;
                         }
                         fin = (strcmp(argv[i], "-") == 0) ? stdin : fopen(argv[i], "rb");
                         if(fin == 0)
                         {
-                            fprintf(stderr, "Error: -i input file not specified or cannot be read\n");
+                            fprintf(stderr, "error: -i input file not specified or cannot be read\n");
                             return 1;
                         }
                     }
@@ -130,13 +134,13 @@ int main(int argc, char *argv[])
                         i++;
                         if(i >= argc)
                         {
-                            fprintf(stderr, "Error: -o output file not specified\n");
+                            fprintf(stderr, "error: -o output file not specified\n");
                             return 1;
                         }
                         fout = (strcmp(argv[i], "-") == 0) ? stdout : fopen(argv[i], "wb");
                         if(fout == 0)
                         {
-                            fprintf(stderr, "Error: -o output file not specified or cannot be read\n");
+                            fprintf(stderr, "error: -o output file not specified or cannot be read\n");
                             return 1;
                         }
                     }
@@ -151,13 +155,13 @@ int main(int argc, char *argv[])
                         i++;
                         if(i >= argc)
                         {
-                            fprintf(stderr, "Error: -r random data file not specified\n");
+                            fprintf(stderr, "error: -r random data file not specified\n");
                             return 1;
                         }
                         frnd = fopen(argv[i], "rb");
                         if(frnd == 0)
                         {
-                            fprintf(stderr, "Error: -r random data file not specified or cannot be read\n");
+                            fprintf(stderr, "error: -r random data file not specified or cannot be read\n");
                             return 1;
                         }
                     }
@@ -172,7 +176,7 @@ int main(int argc, char *argv[])
                         i++;
                         if(i >= argc)
                         {
-                            fprintf(stderr, "Error: -p password not specified\n");
+                            fprintf(stderr, "error: -p password not specified\n");
                             return 1;
                         }
                         pass = argv[i];
@@ -189,16 +193,16 @@ int main(int argc, char *argv[])
                         i++;
                         if(i >= argc)
                         {
-                            fprintf(stderr, "Error: -f password file not specified\n");
+                            fprintf(stderr, "error: -f password file not specified\n");
                             return 1;
                         }
                         fpass = (strcmp(argv[i], "-") == 0) ? stdin : fopen(argv[i], "rb");
                         if(fpass == 0)
                         {
-                            fprintf(stderr, "Error: -f password file not specified or cannot be read\n");
+                            fprintf(stderr, "error: -f password file not specified or cannot be read\n");
                             return 1;
                         }
-                        passBufferRead = fread(passBuffer, 1, passBufferLength * sizeof(char), fpass);
+                        passBufferRead = (int)(fread(passBuffer, (size_t)1, passBufferLength * sizeof(char), fpass) / sizeof(char));
                         fclose(fpass);
                         passBuffer[passBufferRead] = '\0';
                         passBuffer[passBufferLength + 1] = '\0';
@@ -213,7 +217,7 @@ int main(int argc, char *argv[])
                             }
                         }
                         pass = passBuffer;
-                        pass_length = (int)strlen(pass);
+                        pass_length = (int)(strlen(pass) * sizeof(char));
                     }
                     else
                     {
@@ -236,13 +240,13 @@ int main(int argc, char *argv[])
                     i++;
                     if(i >= argc)
                     {
-                        fprintf(stderr, "Error: -k size not specified\n");
+                        fprintf(stderr, "error: -k size not specified\n");
                         return 1;
                     }
                     ops.key_len = read_int(argv[i]) / 8;
                     if((ops.key_len != 16) && (ops.key_len != 24) && (ops.key_len != 32))
                     {
-                        fprintf(stderr, "Error: -k keySize can be one of 128, 192, 256\n");
+                        fprintf(stderr, "error: -k keySize can be one of 128, 192, 256\n");
                         return 1;
                     }
                     break;
@@ -250,28 +254,34 @@ int main(int argc, char *argv[])
                     i++;
                     if(i >= argc)
                     {
-                        fprintf(stderr, "Error: -c count not specified\n");
+                        fprintf(stderr, "error: -c count not specified\n");
                         return 1;
                     }
                     ops.iteration_count = read_long(argv[i]);
                     break;
                 default:
-                    fprintf(stderr, "Error: unknown argument: %s. Use -? for help!\n", argv[i]);
+                    fprintf(stderr, "error: unknown argument: %s, use -? for help!\n", argv[i]);
                     return 1;
             }
         }
         else
         {
-            fprintf(stderr, "Error: unknown argument: %s. Use -? for help!\n", argv[i]);
+            fprintf(stderr, "error: unknown argument: %s, use -? for help!\n", argv[i]);
             return 1;
         }
+    }
+
+    if(ops.ae && ops.deriveKey1)
+    {
+        ops.deriveKey1 = 0;
+        fprintf(stderr, "warning: ignoring -m (makes only sense if -a is also set)\n");
     }
 
     if(!fin) fin = stdin;
     if(!fout) fout = stdout;
     if(!pass || (pass_length <= 0))
     {
-        fprintf(stderr, "Error: -p password is required\n");
+        fprintf(stderr, "error: -p password is required\n");
         return 1;
     }
     if(ops.iteration_count < 1L) ops.iteration_count = 1L;
@@ -293,7 +303,7 @@ int main(int argc, char *argv[])
         frnd = fopen("/dev/urandom", "rb");
         if(ops.verbose && (frnd != 0))
         {
-            fprintf(stderr, "| using -r /dev/urandom\n");
+            fprintf(stderr, "using -r /dev/urandom\n");
         }
     }
 
@@ -304,7 +314,11 @@ int main(int argc, char *argv[])
         error = 1;
     }
 
-    if(ops.verbose) fprintf(stderr, "%s (%d) (%s)\n", !error ? "| Done!" : "| Failed!", error, ops.mode == AES_ENCRYPT ? "encrypt" : "decrypt");
+    if(ops.verbose || error)
+    {
+        fprintf(stderr, "%s (%d) (%s)\n", !error ? "DONE" : "FAILED", error, ops.mode == AES_ENCRYPT ? "encrypt" : "decrypt");
+    }
+
     memset(&ops, 0, sizeof(encode_ops));
 
     if(fin && (fin != stdin)) fclose(fin);

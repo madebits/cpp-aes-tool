@@ -12,7 +12,7 @@ static void pbkdf2_hmac(unsigned char *password, int plen,
                 unsigned char *output)
 {
     sha2_context ctx;
-    int ret, j;
+    int j;
     long i = 0L;
     unsigned char md1[MBEDTLS_MD_MAX_SIZE];
     unsigned char work[MBEDTLS_MD_MAX_SIZE];

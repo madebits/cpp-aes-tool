@@ -8,6 +8,8 @@ extern "C" {
 #define BLOCK_LENGTH 16
 #define STREAM_PAD_SIZE_MAX 2
 #define STREAM_BUFFER_LENGTH ((STREAM_PAD_SIZE_MAX + 2) * BLOCK_LENGTH)
+#define BSIZE(x) (size_t)((x) * sizeof(unsigned char))
+#define BSIZE_BLOCK_LENGTH BSIZE(BLOCK_LENGTH)
 
 typedef struct
 {
