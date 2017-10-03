@@ -43,7 +43,6 @@ static void show_help()
     "  -k keySize        : default 256, valid values are 128, 192, 256\n"
     "  -a                : do not use authenticated encryption (ae)\n"
     "                      default is to use authenticated encryption\n"
-    "                      implies also -x\n"
     "  -m                : use PBKDF1 (SHA256) for key generation\n"
     "                      default is PBKDF2 (SHA256)\n"
     "                      ignored if -a is not set\n"
