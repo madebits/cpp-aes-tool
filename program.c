@@ -35,7 +35,7 @@ static void show_help()
     "  -e                : encrypt mode (default)\n"
     "  -d                : decrypt mode\n"
 
-    "  -c iterationCount : default 500000, should be >= 1\n"
+    "  -c iterationCount : default 1000000, should be >= 1\n"
     "  -r fileRandomIn   : a file to read bytes of random data for IV, salt\n"
     "                      if not set or shorter than needed\n"
     "                      that the rest is filled with C rand() data\n"
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
     ops.key_len = 32;
     ops.mode = AES_ENCRYPT;
     ops.salt_len_equals_keysize = 1;
-    ops.iteration_count = 500000L;
+    ops.iteration_count = 1000000L;
     ops.verbose = 0;
     ops.deriveKey1 = 0;
     ops.ae = 1;
